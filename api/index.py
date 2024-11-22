@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import openai
 import os
@@ -19,6 +20,10 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 class ImagePrompt(BaseModel):
     prompt: str
 
+@app.get("/")
+async def read_root():
+    return {"message": "Image Generation API"}
+
 @app.post("/api/generate-image")
 async def generate_image(prompt_data: ImagePrompt):
     if not openai.api_key:
@@ -34,3 +39,8 @@ async def generate_image(prompt_data: ImagePrompt):
         return {"image_url": response.data[0].url}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+try:
+    app.mount("/", StaticFiles(directory="public", html=True), name="static")
+except:
+    pass
