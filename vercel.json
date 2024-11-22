@@ -12,7 +12,7 @@
   ],
   "routes": [
     {
-      "src": "/generate-image",
+      "src": "/api/generate-image",
       "dest": "api/index.py"
     },
     {
