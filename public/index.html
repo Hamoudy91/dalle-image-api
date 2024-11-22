@@ -1,36 +1,225 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>DALL-E Image Generator</title>
+    <title>AI Image Generator</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { max-width: 800px; margin: 2rem auto; padding: 0 1rem; font-family: Arial; }
-        textarea { width: 100%; padding: 0.5rem; margin: 1rem 0; }
-        button { background: #0070f3; color: white; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; }
-        .error { color: red; }
-        img { max-width: 100%; margin-top: 1rem; border-radius: 8px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+            color: #fff;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, #00ff87, #60efff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .input-container {
+            margin-bottom: 2rem;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 1rem;
+            min-height: 120px;
+            resize: vertical;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        textarea:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #00ff87;
+            box-shadow: 0 0 10px rgba(0, 255, 135, 0.3);
+        }
+
+        .button-container {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        button {
+            background: linear-gradient(45deg, #00ff87, #60efff);
+            color: #000;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            min-width: 200px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 135, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        #loading {
+            display: none;
+            text-align: center;
+            margin: 1rem 0;
+            color: #00ff87;
+        }
+
+        .spinner {
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #result {
+            text-align: center;
+        }
+
+        .result-image {
+            max-width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            margin-top: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .result-image:hover {
+            transform: scale(1.02);
+        }
+
+        .error {
+            color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>Image Generator</h1>
-    <textarea id="prompt" rows="4" placeholder="Describe the image..."></textarea>
-    <button onclick="generateImage()">Generate</button>
-    <div id="result"></div>
+    <div class="container">
+        <h1><i class="fas fa-robot"></i> AI Image Generator</h1>
+        
+        <div class="input-container">
+            <textarea 
+                id="prompt" 
+                placeholder="Describe the image you want to create..."
+                rows="4"
+            ></textarea>
+        </div>
+
+        <div class="button-container">
+            <button onclick="generateImage()" id="generateBtn">
+                <i class="fas fa-magic"></i> Generate Image
+            </button>
+        </div>
+
+        <div id="loading">
+            <i class="fas fa-spinner spinner"></i> Creating your masterpiece...
+        </div>
+
+        <div id="result"></div>
+    </div>
 
     <script>
         async function generateImage() {
+            const prompt = document.getElementById('prompt').value;
             const result = document.getElementById('result');
+            const loading = document.getElementById('loading');
+            const generateBtn = document.getElementById('generateBtn');
+            
+            if (!prompt.trim()) {
+                result.innerHTML = `
+                    <div class="error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Please enter a description
+                    </div>`;
+                return;
+            }
+
+            loading.style.display = 'block';
+            generateBtn.disabled = true;
+            result.innerHTML = '';
+
             try {
                 const response = await fetch('/api/generate', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({prompt: document.getElementById('prompt').value})
+                    body: JSON.stringify({prompt: prompt})
                 });
+                
                 const data = await response.json();
+                
                 if (data.image_url) {
-                    result.innerHTML = `<img src="${data.image_url}" alt="Generated image">`;
+                    result.innerHTML = `
+                        <img 
+                            src="${data.image_url}" 
+                            alt="Generated image" 
+                            class="result-image"
+                        >`;
+                } else {
+                    throw new Error(data.error || 'Failed to generate image');
                 }
             } catch (e) {
-                result.innerHTML = `<div class="error">Error: ${e.message}</div>`;
+                result.innerHTML = `
+                    <div class="error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Error: ${e.message}
+                    </div>`;
+            } finally {
+                loading.style.display = 'none';
+                generateBtn.disabled = false;
             }
         }
     </script>
