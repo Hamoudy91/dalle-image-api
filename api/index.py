@@ -10,32 +10,28 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-class ImagePrompt(BaseModel):
+class Prompt(BaseModel):
     prompt: str
 
 @app.get("/")
-def read_root():
-    with open('public/index.html', 'r') as f:
-        html_content = f.read()
-    return HTMLResponse(content=html_content)
+def home():
+    with open('index.html') as f:
+        return HTMLResponse(f.read())
 
-@app.post("/generate-image")
-async def generate_image(prompt_data: ImagePrompt):
-    if not openai.api_key:
-        raise HTTPException(status_code=500, detail="API key not configured")
+@app.post("/generate")
+async def generate(prompt: Prompt):
     try:
         response = openai.images.generate(
             model="dall-e-3",
-            prompt=prompt_data.prompt,
-            n=1,
-            size="1024x1024"
+            prompt=prompt.prompt,
+            size="1024x1024",
+            n=1
         )
         return {"image_url": response.data[0].url}
     except Exception as e:
