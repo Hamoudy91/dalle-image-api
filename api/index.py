@@ -23,7 +23,7 @@ class ImagePrompt(BaseModel):
 async def generate_image(prompt_data: ImagePrompt):
     if not openai.api_key:
         raise HTTPException(status_code=500, detail="API key not configured")
-        
+    
     try:
         response = openai.images.generate(
             model="dall-e-3",
