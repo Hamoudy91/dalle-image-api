@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DALL-E Image Generator</title>
+    <style>
+        body { max-width: 800px; margin: 2rem auto; padding: 0 1rem; font-family: Arial; }
+        textarea { width: 100%; padding: 0.5rem; margin: 1rem 0; }
+        button { background: #0070f3; color: white; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; }
+        .error { color: red; }
+        img { max-width: 100%; margin-top: 1rem; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <h1>Image Generator</h1>
+    <textarea id="prompt" rows="4" placeholder="Describe the image..."></textarea>
+    <button onclick="generateImage()">Generate</button>
+    <div id="result"></div>
+
+    <script>
+        async function generateImage() {
+            const result = document.getElementById('result');
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({prompt: document.getElementById('prompt').value})
+                });
+                const data = await response.json();
+                if (data.image_url) {
+                    result.innerHTML = `<img src="${data.image_url}" alt="Generated image">`;
+                }
+            } catch (e) {
+                result.innerHTML = `<div class="error">Error: ${e.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
