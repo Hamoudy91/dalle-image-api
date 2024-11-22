@@ -27,6 +27,20 @@
             border-radius: 4px;
             cursor: pointer;
         }
+        .loading {
+            display: none;
+            margin-top: 1rem;
+        }
+        img {
+            max-width: 100%;
+            margin-top: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .error {
+            color: red;
+            margin-top: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -34,15 +48,27 @@
     <div class="input-group">
         <textarea id="prompt" rows="4" placeholder="Enter your image description"></textarea>
     </div>
-    <button onclick="generateImage()">Generate Image</button>
+    <button onclick="generateImage()" id="generateBtn">Generate Image</button>
+    <div id="loading" class="loading">Generating image...</div>
     <div id="result"></div>
 
     <script>
         async function generateImage() {
             const prompt = document.getElementById('prompt').value;
             const result = document.getElementById('result');
+            const loading = document.getElementById('loading');
+            const generateBtn = document.getElementById('generateBtn');
             
+            if (!prompt.trim()) {
+                result.innerHTML = '<div class="error">Please enter a description</div>';
+                return;
+            }
+
             try {
+                loading.style.display = 'block';
+                generateBtn.disabled = true;
+                result.innerHTML = '';
+                
                 const response = await fetch('/generate-image', {
                     method: 'POST',
                     headers: {
@@ -52,9 +78,20 @@
                 });
                 
                 const data = await response.json();
-                result.innerHTML = `<img src="${data.image_url}" alt="Generated image" style="max-width: 100%">`;
+                
+                if (data.image_url) {
+                    const img = new Image();
+                    img.src = data.image_url;
+                    img.alt = prompt;
+                    result.appendChild(img);
+                } else {
+                    throw new Error('No image URL received');
+                }
             } catch (error) {
-                result.innerHTML = 'Error generating image: ' + error.message;
+                result.innerHTML = `<div class="error">Error generating image: ${error.message}</div>`;
+            } finally {
+                loading.style.display = 'none';
+                generateBtn.disabled = false;
             }
         }
     </script>
