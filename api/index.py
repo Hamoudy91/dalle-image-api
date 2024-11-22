@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import openai
 import os
@@ -21,14 +21,15 @@ class ImagePrompt(BaseModel):
     prompt: str
 
 @app.get("/")
-async def read_root():
-    return {"message": "Image Generation API"}
+def read_root():
+    with open('public/index.html', 'r') as f:
+        html_content = f.read()
+    return HTMLResponse(content=html_content)
 
-@app.post("/api/generate-image")
+@app.post("/generate-image")
 async def generate_image(prompt_data: ImagePrompt):
     if not openai.api_key:
         raise HTTPException(status_code=500, detail="API key not configured")
-    
     try:
         response = openai.images.generate(
             model="dall-e-3",
@@ -39,8 +40,3 @@ async def generate_image(prompt_data: ImagePrompt):
         return {"image_url": response.data[0].url}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-try:
-    app.mount("/", StaticFiles(directory="public", html=True), name="static")
-except:
-    pass
