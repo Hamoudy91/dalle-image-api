@@ -4,6 +4,10 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import openai
 import os
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -15,35 +19,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Get API key from environment variable
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-if not OPENAI_API_KEY:
-    raise ValueError("No OpenAI API key found in environment variables")
-
+logger.info(f"API Key present: {bool(OPENAI_API_KEY)}")
 openai.api_key = OPENAI_API_KEY
 
 class ImagePrompt(BaseModel):
     prompt: str
 
-@app.get("/")
-def read_root():
-    return {"message": "Image Generation API"}
-
 @app.post("/generate-image")
 async def generate_image(prompt_data: ImagePrompt):
-    if not prompt_data.prompt:
-        raise HTTPException(status_code=400, detail="Prompt cannot be empty")
-    
+    logger.info(f"Received prompt: {prompt_data.prompt}")
     try:
         response = openai.images.generate(
             prompt=prompt_data.prompt,
             n=1,
             size="1024x1024"
         )
-        
-        if not response.data:
-            raise HTTPException(status_code=500, detail="No image generated")
-            
-        return JSONResponse(content={"image_url": response.data[0].url})
+        logger.info(f"OpenAI response: {response}")
+        return {"image_url": response.data[0].url}
     except Exception as e:
+        logger.error(f"Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
