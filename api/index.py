@@ -14,22 +14,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# More flexible API key handling
-openai.api_key = os.environ.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class ImagePrompt(BaseModel):
     prompt: str
 
-@app.post("/generate-image")
+@app.post("/api/generate-image")
 async def generate_image(prompt_data: ImagePrompt):
     if not openai.api_key:
-        return {"error": "API key not configured"}
+        raise HTTPException(status_code=500, detail="API key not configured")
+        
     try:
         response = openai.images.generate(
+            model="dall-e-3",
             prompt=prompt_data.prompt,
             n=1,
             size="1024x1024"
         )
         return {"image_url": response.data[0].url}
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
