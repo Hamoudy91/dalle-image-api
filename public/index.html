@@ -30,7 +30,7 @@
             result.innerHTML = '';
             
             try {
-                const response = await fetch('/generate-image', {
+                const response = await fetch('/api/generate-image', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ prompt: prompt })
@@ -41,8 +41,6 @@
                 }
                 
                 const data = await response.json();
-                
-                if (data.error) throw new Error(data.error);
                 if (!data.image_url) throw new Error('No image URL received');
                 
                 const img = document.createElement('img');
